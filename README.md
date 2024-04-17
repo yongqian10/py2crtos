@@ -13,35 +13,29 @@
 -    **Debug**: Set your rules and let Twin held them for you, we support constraint such as timing and shared memory reference check.
 
 ### Features
- 🔒 Command based tasks defination, 🖇️ Timing and shared memory validation, 🚀 Development with tasks(multiple list) overview, ⚙ ️All Python3
+ 🔒 Command based tasks defination, 🖇️ Timing and shared memory validation, 🚀 Development with tasks overview, ⚙ ️All Python3
 
 ### Code example
-Simple Wasp config file in which you describe the high-level details of your web app:
-```js
-// file: main.wasp
+Simple Twin config file in which you describe the high-level details of your Twin app:
+```py
+// file: main.twin
 
-app todoApp {
-  title: "ToDo App",  // visible in the browser tab
-  wasp: { version: "^0.13.0" },
-  auth: { // full-stack auth out-of-the-box
-    userEntity: User, methods: { email: {...} }
-  }
-}
+twinapp = [
+    # common
+    [
+        addQueue('q1')
+    ],
 
-route RootRoute { path: "/", to: MainPage }
-page MainPage {
-  authRequired: true, // Limit access to logged-in users.
-  component: import Main from "@client/Main.tsx" // Your React code.
-}
+    # task 1
+    [
+        addVar(buffer),
+        QueueReceive('q1', buffer),
+        printString(buffer)
+    ],
 
-query getTasks {
-  fn: import { getTasks } from "@server/tasks.js", // Your Node.js code.
-  entities: [Task] // Automatic cache invalidation.
-}
-
-entity Task {=psl  // Your Prisma data model.
-    id          Int     @id @default(autoincrement())
-    description String
-    isDone      Boolean @default(false)
-psl=}
-```
+    # task 2
+    [
+        addVar(buffer, "hello"),
+        QueueSend('q1', buffer)
+    ]
+]
