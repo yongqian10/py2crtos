@@ -297,7 +297,7 @@ def oneOf(charToMatch: str) -> Parser[str]:
 def noneOf(charNotToMatch: str) -> Parser[str]:
     return satisfy(lambda a: not a in charNotToMatch, f'unexpected {charNotToMatch}')
 
-def separatedBy(a: Parser[List[str]], s: Parser[str]) -> Parser[List[str]]:
+def separatedBy(a: Parser[List[str]], s: Parser[Any]) -> Parser[List[Any]]:
     return applicative(fmap(a, cons), many1(chainWithSkip(s, a)))
 
 def surroundedBy(s1: str, s2: str) -> Parser[Any]:

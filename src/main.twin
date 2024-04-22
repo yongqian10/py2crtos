@@ -1,0 +1,19 @@
+twinapp = [
+    # common
+    [
+        addQueue('q1', 5)
+    ],
+
+    # task 1
+    [
+        addVar(buffer, ''),
+        QueueReceive('q1', buffer),
+        printString(buffer)
+    ],
+
+    # task 2
+    [
+        addVar(buffer, 'hello'),
+        QueueSend('q1', buffer)
+    ]
+]
