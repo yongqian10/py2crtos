@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 
 # functional stack
 from toolz.functoolz import memoize
@@ -12,16 +13,12 @@ from adt.case import Case
 #from pymonad.maybe import *
 from networkx import DiGraph
 
-from efx_ipmgr.production_api.monad.either import Either
-from efx_ipmgr.production_api.type_class.functor import fmap
-from efx_ipmgr.production_api.type_class.applicative import alternate, applicative, ignoreRight
-from efx_ipmgr.production_api.type_class.monad import _return, monad
-from efx_ipmgr.production_api.type_class.list import uncons, cons
-from efx_ipmgr.production_api.type_class.unlift import Unlift
-from efx_ipmgr.production_api.type.fb_type import SyntaxError
-from efx_ipmgr.production_api.helper import isInt
-from efx_ipmgr.production_api.type.graph_type import *
-import re
+from src.monad.either import Either
+from src.typeClass.functor import fmap
+from src.typeClass.applicative import alternate, applicative, ignoreRight
+from src.typeClass.monad import _return, monad
+from src.typeClass.list import uncons, cons
+from src.type.fbTy import SyntaxError
 # TODO display display line, char seq num during syntax error
 
 T=TypeVar('T')
@@ -258,7 +255,7 @@ def chainl1(p1: Parser[Any], p2: Parser[Callable[[Any, Any], Any]]) -> Parser[An
             just=lambda a: Parser.PARSER(lambda s: p2.match(
                 parser=lambda f2: f2(s).match(
                     left=lambda l: Either.RIGHT((_rest, s)),
-                    right=lambda t: Unlift(chain1(p1, lambda b:
+                    right=lambda t: runParser(chain1(p1, lambda b:
                                                   rest(t[0](_rest, b), p1, p2)))(t[1]).match(
                                                       left=lambda l: Either.LEFT(l),
                                                       right=lambda t: Either.RIGHT(t)))))))
@@ -541,8 +538,7 @@ def parseBitstringBinary() -> Parser[int]:
     return monad(parseString('b'), lambda a: satisfyMany(_parseBinaryStr))
 
 ############################################################################################
-@Unlift.instance(Parser)
-def _unlift_Parser(instance: Parser):
+def runParser(instance: Parser):
     return instance.match(
         parser=lambda a : a
     )

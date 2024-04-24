@@ -5,11 +5,11 @@ from typing import Callable, Generic, TypeVar, Any
 from adt.decorator import adt
 from adt.case import Case
 
-from efx_ipmgr.production_api.type_class.functor import fmap
-from efx_ipmgr.production_api.type_class.applicative import applicative
-from efx_ipmgr.production_api.type_class.show import show, show2
-from efx_ipmgr.production_api.type_class.to_object import toObject
-from efx_ipmgr.production_api.type_class.monad import monad
+from src.typeClass.functor import fmap
+from src.typeClass.applicative import applicative
+from src.typeClass.show import show, show2
+from src.typeClass.to_object import toObject
+from src.typeClass.monad import monad
 
 
 T = TypeVar('T')

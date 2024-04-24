@@ -7,10 +7,10 @@ from adt.decorator import adt
 from adt.case import Case
 #from pymonad.maybe import *
 
-from efx_ipmgr.production_api.type_class.monad import _return, monad
-from efx_ipmgr.production_api.type_class.unlift import Unlift
+from src.type_class.monad import _return, monad
+from src.type_class.unlift import Unlift
 
-from efx_ipmgr.production_api.monad.either import Either
+from src.monad.either import Either
 
 
 M = TypeVar('M')

@@ -8,13 +8,13 @@ from adt.decorator import adt
 from adt.case import Case
 #from pymonad.maybe import *
 
-from efx_ipmgr.production_api.type_class.functor import fmap
-from efx_ipmgr.production_api.type_class.applicative import applicative
-from efx_ipmgr.production_api.type_class.monad import monad
-from efx_ipmgr.production_api.type_class.foldable import foldMap
-from efx_ipmgr.production_api.type_class.unlift import Unlift
+from src.type_class.functor import fmap
+from src.type_class.applicative import applicative
+from src.type_class.monad import monad
+from src.type_class.foldable import foldMap
+from src.type_class.unlift import Unlift
 
-from efx_ipmgr.production_api.monad.holder import Holder
+from src.monad.holder import Holder
 
 # NOTE: HKT is not supported hence just use Any
 #T = TypeVar('T')

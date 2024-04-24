@@ -4,17 +4,16 @@ from adt.decorator import adt
 from adt.case import Case
 
 @adt
-class TwinTm:
-    INTTYPE             :   Case[int]
-    BOOLTYPE            :   Case[bool]
-    STRINGTYPE          :   Case[str]
-    FLOATTYPE           :   Case[Decimal]
-
-    VARTYPE             :   Case[str]
+class TwTm:
+    TmInt               :   Case[int]
+    TmBool              :   Case[bool]
+    TmString            :   Case[str]
+    TmFloat             :   Case[Decimal]
+    TmVar               :   Case[str]
 
     # TODO support complex type
-    #LISTTYPE            :   Case[List['TwinLit']]
-    #DICTTYPE            :   Case[Dict[str, 'TwinLit']]
+    #LISTTYPE            :   Case[List['TwLit']]
+    #DICTTYPE            :   Case[Dict[str, 'TwLit']]
 
     # TODO: support custom type
     #RECORDTYPE          :   Case[Any]
@@ -22,21 +21,21 @@ class TwinTm:
     #PYBITSTRINGTYPE     :   Case[PyBitStringType, int]
 
 @adt
-class TwinCommonCommand:
-    ADDGLOBALVAR        :   Case[TwinTm, TwinTm]
-    ADDQUEUE            :   Case[TwinTm, TwinTm] # name, length
+class TwCommonCommand:
+    AddGlobalVar        :   Case[TwTm, TwTm]
+    AddQueue            :   Case[TwTm, TwTm] # name, length
 
 @adt
-class TwinTaskCommand:
-    ADDVAR              :   Case[TwinTm, TwinTm]
-    QUEUERECEIVE        :   Case[TwinTm, TwinTm]
-    QUEUESEND           :   Case[TwinTm, TwinTm]
-    PRINTSTRING         :   Case[TwinTm]
+class TwTaskCommand:
+    AddVar              :   Case[TwTm, TwTm]
+    QueueReceive        :   Case[TwTm, TwTm]
+    QueueSend           :   Case[TwTm, TwTm]
+    PrintString         :   Case[TwTm]
 
 @adt
-class Command:
-    COMMAND             :   Case[str, List[TwinTm]]     # -> name, list of params
+class TwCommand:
+    Command             :   Case[str, List[TwTm]]     # -> name, list of params
 
 @adt
-class TwinProg:
-    PROG                :   Case[List[List[Command]]]
+class TwProg:
+    Prog                :   Case[List[List[TwCommand]]]

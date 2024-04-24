@@ -1,11 +1,12 @@
 from adt.decorator import adt
 from adt.case import Case
-from src.type_class.show import show
+from src.typeClass.show import show
 
 @adt
 class SyntaxError:
     EOL                             :   Case[str]
     INVALID                         :   Case[str]
+    MISMATCH                        :   Case[str]
 
 class Error:
     SYNTAXERROR                     :   Case[SyntaxError]

@@ -8,11 +8,11 @@ from adt.decorator import adt
 from adt.case import Case
 #from pymonad.maybe import *
 
-from efx_ipmgr.production_api.type_class.functor import fmap
-from efx_ipmgr.production_api.type_class.applicative import applicative
-from efx_ipmgr.production_api.type_class.monad import monad
-from efx_ipmgr.production_api.type_class.monoid import mappend, mconcat
-from efx_ipmgr.production_api.type_class.unlift import Unlift
+from src.type_class.functor import fmap
+from src.type_class.applicative import applicative
+from src.type_class.monad import monad
+from src.type_class.monoid import mappend, mconcat
+from src.type_class.unlift import Unlift
 
 #from Monad.Free import Lift, Free
 

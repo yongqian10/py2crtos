@@ -7,9 +7,9 @@ from adt.decorator import adt
 from adt.case import Case
 #from pymonad.maybe import *
 
-from efx_ipmgr.production_api.type_class.monad import _return, monad
-from efx_ipmgr.production_api.type_class.monoid import mappend
-from efx_ipmgr.production_api.type_class.unlift import Unlift
+from src.type_class.monad import _return, monad
+from src.type_class.monoid import mappend
+from src.type_class.unlift import Unlift
 
 
 W = TypeVar('W') # W has to be monoid
