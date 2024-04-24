@@ -11,7 +11,7 @@ from src.type.fbTy import SyntaxError
 ###########################################################################
 # parser
 def parseExceptReservedChar() -> Parser[str]:
-    return parseAnyExceptSome(['(', '!', ',', '.', ')', '*' ,'/', '^', '&', '|', '$', '@', '%', '"', "'", '>', '<', '?', '{', '}', '[', ']'])
+    return parseAnyExceptSome(['=','(', '!', ',', '.', ')', '*' ,'/', '^', '&', '|', '$', '@', '%', '"', "'", '>', '<', '?', '{', '}', '[', ']'])
 
 def parseIdentifier():
     return parseExceptReservedChar()
@@ -38,43 +38,24 @@ def parseTwCommandList() -> Parser[List[TwCommand]]:
                                                 satisfy(lambda a: a == ']', f'expecting closing bracket, ]'))
 
 def parseTwApp() -> Parser[TwProg]:
-    return ignoreRight(chainWithSkip(parseSaidChar('['),
+    return monad(parseIdentifier(), lambda a: chainWithSkip(parseSaidChar('='), ignoreRight(chainWithSkip(parseSaidChar('['),
                  alternate(chainWithSkip(parseSaidChar(']'), bail(SyntaxError.INVALID('List cannot be empty'))),
                                          separatedBy(monad(parseTwCommandList(), lambda b: identity([b])), parseSaidChar(',')))),
-                                                satisfy(lambda a: a == ']', f'expecting closing bracket, ]'))
+                                                satisfy(lambda a: a == ']', f'expecting closing bracket, ]'))))
 
 ###########################################################################
 # main
 
 # remove whitespace
 def formatExprString(expr: str) -> str:
-    #return re.sub(r"[\n\t\s ]*", "", expr)
-    if expr == '':
-        return ''
-
-    substring = re.finditer(r'[^"]*(?="[^"]*?")', expr)
-    if expr[0] == '"':
-        isstring = False
-    else:
-        isstring = True
-
-    substring = list(substring)
-    if substring == []:
-        return re.sub(r"[\n\t\s ]*", "", expr)
-
-    for match in substring:
-        if str(match.group()) != '':
-            if isstring == True:
-                formatted = re.sub(r"[\n\t\s ]*", "", str(match.group()))
-                expr = re.sub(f'{re.escape(str(match.group()))}', formatted, expr)
-            isstring = not isstring
+    expr = re.sub(r"[\n\t\s]*", "", expr)
     return expr
 
 def sandboxCompile(twFile):
     f = open(twFile, 'r')
     code = f.read()
     f.close()
-
+    print(formatExprString(code))
     res = runParser(parseTwApp())(ParseState(string=formatExprString(code),
                                               offset=0,
                                               parenthesisCounter=0,

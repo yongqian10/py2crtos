@@ -155,13 +155,7 @@ def option(p1: Parser[Any], p2: Parser[Any]) -> Parser[Any]:
                 left=lambda e: e.match(
                     mismatch=lambda f: p2.match(parser=lambda f2: f2(s)),
                     eol=lambda f: p2.match(parser=lambda f2: f2(s)),
-                    missingoperand=lambda f: Either.LEFT(e),
-                    negateerror=lambda f: Either.LEFT(e),
-                    bitstringlengthinvalid=lambda f: Either.LEFT(e),
-                    bitvalueinvalid=lambda f: Either.LEFT(e),
-                    intoverflow=lambda f: Either.LEFT(e),
-                    invalid=lambda f: Either.LEFT(e),
-                    fatal=lambda f: Either.LEFT(e)
+                    invalid=lambda f: Either.LEFT(e)
                 ),
 
                 right=lambda t: Either.RIGHT(t))))

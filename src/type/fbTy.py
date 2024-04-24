@@ -24,4 +24,5 @@ class Fb:
 def _show_SyntaxError(instance: SyntaxError) -> str:
     return instance.match(
                 eol=lambda c: f'[error.end_of_line]{c}',
-                invalid=lambda c: f'[error.invalid_syntax]{c}')
+                invalid=lambda c: f'[error.invalid_syntax]{c}',
+                mismatch=lambda c: f'[error.mismatch_syntax]{c}')
