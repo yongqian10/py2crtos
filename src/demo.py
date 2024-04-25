@@ -44,6 +44,11 @@ def parseTwApp() -> Parser[TwProg]:
                                                 satisfy(lambda a: a == ']', f'expecting closing bracket, ]'))))
 
 ###########################################################################
+# codegen
+def codegen():
+    pass
+
+###########################################################################
 # main
 
 # remove whitespace
