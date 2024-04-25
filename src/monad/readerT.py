@@ -24,8 +24,8 @@ def _monad_ReaderT(instance: ReaderT, func: Callable[[Any], ReaderT]):
                     runReaderT(func(a), r)))
 
 @_return.instance(ReaderT)
-def __return_ReaderT(instance: ReaderT, pure: Any):
-        return ReaderT.READERT(lambda r: _return(pure))  # not going to work this way, no infer in python
+def _return_ReaderT(instance: ReaderT, m: M, pure: Any):
+        return ReaderT.READERT(lambda r: _return(m, pure))
 
 
 def runReaderT(f: ReaderT, r) -> M:
@@ -35,5 +35,13 @@ def runReaderT(f: ReaderT, r) -> M:
 ###################################################################
 # operations
 
-def asks(m, a) -> ReaderT:
-    return ReaderT.READERT(lambda r: _return(m, a))
+def ask(m) -> ReaderT:
+    return ReaderT.READERT(lambda r: _return(m, r))
+
+# apply func to env
+def asks(f: Callable[[R], R], m) -> ReaderT:
+    return ReaderT.READERT(lambda r: _return(m, f(r)))
+
+# mod env
+def local(f: Callable[[R], R], reader: ReaderT) -> ReaderT:
+    return ReaderT.READERT(lambda r: runReaderT(reader, f(r)))
