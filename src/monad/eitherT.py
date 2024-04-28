@@ -19,7 +19,6 @@ M = TypeVar('M')
 class EitherT(Generic[M]):
     EITHERT: Case[M]
 
-
 @monad.instance(EitherT)
 def _monad_EitherT(instance: EitherT, func: Callable[[Any], EitherT]) -> EitherT:
     return EitherT.EITHERT(instance.match(

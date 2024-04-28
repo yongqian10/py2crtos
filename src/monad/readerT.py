@@ -15,7 +15,7 @@ A = TypeVar('A')
 
 @adt
 class ReaderT(Generic[R, M, A]):
-    READERT: Case[Callable[R, M]]
+    READERT: Case[Callable[[R], M]]
 
 @monad.instance(ReaderT)
 def _monad_ReaderT(instance: ReaderT, func: Callable[[Any], ReaderT]):
@@ -23,6 +23,7 @@ def _monad_ReaderT(instance: ReaderT, func: Callable[[Any], ReaderT]):
                 monad(runReaderT(instance, r), lambda a:
                     runReaderT(func(a), r)))
 
+# need m as arg make it hard to use
 @_return.instance(ReaderT)
 def _return_ReaderT(instance: ReaderT, m: M, pure: Any):
         return ReaderT.READERT(lambda r: _return(m, pure))
