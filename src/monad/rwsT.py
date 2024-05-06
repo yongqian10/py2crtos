@@ -7,8 +7,8 @@ from adt.decorator import adt
 from adt.case import Case
 #from pymonad.maybe import *
 
-from src.type_class.monad import _return, monad
-from src.type_class.monoid import mappend
+from src.typeClass.monad import _return, monad
+from src.typeClass.monoid import mappend
 
 R = TypeVar('R') # reader
 W = TypeVar('W') # writer

@@ -23,8 +23,8 @@ class Except(Generic[E, A]):
 def _monad_Except(instance: Except, func: Callable[[A], Except]):
     return Except.EXCEPT(monad(runExcept(instance), lambda a: runExcept(func(a))))
 
-@_return.instance(Except)
-def _return_Except(instance: Except, pure: A):
+#@_return.instance(Except)
+def returnExcept(pure: A):
     return Except.EXCEPT(Either.RIGHT(pure))
 
 def fail(fb):
