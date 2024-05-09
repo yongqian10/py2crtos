@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from src.typeClass.monad import monad, _return
 from src.typeClass.monoid import mappend
-from src.monad._except import Except, returnExcept
+from src.monad._except import Except, returnExcept, throwE
 from src.monad.either import Either
 from src.type.twTy import TwTm, TwTy
 
@@ -46,6 +46,12 @@ def returnCodeGen(pure: A) -> CodeGen[A]:
 def runCodeGen(f: CodeGen, r, s) -> Except:
     return f.match(codegen=lambda a : a(r, s))
 
+def returnCodeGen2(_except: Except) -> CodeGen[A]:
+    return CodeGen.CODEGEN(lambda t: returnExcept(_except))
+
+def runCodeGen3() -> Except:
+    pass
+
 ###################################################################
 # reader ops
 ###################################################################
@@ -67,14 +73,15 @@ def local(f: Callable[[Ctx], Ctx], codegen: CodeGen[A]) -> CodeGen[A]:
 def toIndexer():
     pass
 
+# check for var instance
 def lookupBind(name: str) -> CodeGen[Tuple[TwTy, str]]:
-    return ask()
+    return monad(asks(lambda ctx: ctx.tmBindEnv), lambda env: returnCodeGen((env[name], name)) if name in env else returnCodeGen2(throwE('')))
 
 # assignment codegen
 def infer(tm: TwTm, varName: str) -> CodeGen[AST]:
     return tm.match(
         TmInt=lambda a: AST.AST(C.CAssignment(C.CIndexer(C.CVar(varName), C.CTemplateLiteral('int')), int(a))),
-        TmString=lambda a: AST.AST(C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('str'), lit=a)),
-        TmDouble=lambda a: AST.AST(C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('double'), lit=a)),
-        TmVar=lambda a: AST.AST(C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('double'), lit=a)),
+        TmString=lambda a: AST.AST(C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('str'), lit=a))),
+        TmDouble=lambda a: AST.AST(C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('double'), lit=a))),
+        TmVar=lambda a: AST.AST(), lit=a)),
     )
