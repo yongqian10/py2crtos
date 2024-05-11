@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from src.typeClass.monad import monad, _return
 from src.typeClass.monoid import mappend
-from src.monad._except import Except, returnExcept, throwE
-from src.monad.either import Either
+from src.monad._except import Except, returnExcept, runExcept, throwE
+from src.monad.either import Either, returnEither
 from src.type.twTy import TwTm, TwTy
 
 A = TypeVar('A') # reader
@@ -22,9 +22,11 @@ class C:
     CIndexer:           Case['C', 'C']
     CVar:               Case[str]
 
-@adt
-class AST:
-    AST:    Case[C]
+    CFunction:          Case[str, List['C'], 'C']   # accept list of func args
+    CBlock:             Case[List['C']]
+    CReturn:            Case[List['C']]             # return list of p
+
+type AST =  List[C]
 
 # R -> Ctx
 # W -> Tuple
@@ -43,14 +45,15 @@ def _monad_CodeGen(instance: CodeGen, func: Callable[[A], CodeGen]) -> CodeGen[A
 def returnCodeGen(pure: A) -> CodeGen[A]:
     return CodeGen.CODEGEN(lambda t: returnExcept((pure, t[1], ())))
 
-def runCodeGen(f: CodeGen, r, s) -> Except:
-    return f.match(codegen=lambda a : a(r, s))
-
 def returnCodeGen2(_except: Except) -> CodeGen[A]:
     return CodeGen.CODEGEN(lambda t: returnExcept(_except))
 
-def runCodeGen3() -> Except:
-    pass
+def runCodeGen(tm: TwTm) -> Either[str, C]:
+    def _runCodeGen(f: CodeGen, r, s) -> Except:
+        return f.match(codegen=lambda a : a(r, s))
+
+    return monad(runExcept(_runCodeGen(infer(tm), Ctx(tmBindEnv={}), 0)), lambda t:
+                 returnEither(C.CFunction('main', [], C.CBlock(t[0]+[C.CReturn(C.CVar(t[1]))]))))
 
 ###################################################################
 # reader ops
@@ -80,8 +83,7 @@ def lookupBind(name: str) -> CodeGen[Tuple[TwTy, str]]:
 # assignment codegen
 def infer(tm: TwTm, varName: str) -> CodeGen[AST]:
     return tm.match(
-        TmInt=lambda a: AST.AST(C.CAssignment(C.CIndexer(C.CVar(varName), C.CTemplateLiteral('int')), int(a))),
-        TmString=lambda a: AST.AST(C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('str'), lit=a))),
-        TmDouble=lambda a: AST.AST(C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('double'), lit=a))),
-        TmVar=lambda a: AST.AST(), lit=a)),
-    )
+        TmInt=lambda a: [C.CAssignment(C.CIndexer(C.CVar(varName), C.CTemplateLiteral('int')), int(a))],
+        TmString=lambda a: [C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('str'), lit=a))],
+        TmDouble=lambda a: [C.CAssignment(C.CIndexer(varName=C.CVar(varName), varType=C.CTemplateLiteral('double'), lit=a))],
+        TmVar=lambda a: AST.AST(), lit=a)

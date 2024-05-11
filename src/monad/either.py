@@ -29,8 +29,8 @@ def _monad_Either(instance: Either, func: Callable[[Any], Either]):
         left=lambda e: Either.LEFT(e)
     )
 
-@_return.instance(Either)
-def __return_Either(instance: Any):
+#@_return.instance(Either)
+def returnEither(instance: Any):
     return Either.RIGHT(instance)
 
 @Unlift.instance(Either)
