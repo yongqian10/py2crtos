@@ -113,22 +113,36 @@ class CTm:
     CTmPointerData:             Case[str]
 
     # -----------------------------------------------------------------------------
+    # operation call
     CTmUnary:                   Case[CUnaryOperator, 'CTm']
     CTmBinary:                  Case[CBinaryOperator, 'CTm', 'CTm']
 
-    CTmArrayIndexer:            Case['CTm']                     # C only support single indexing
-    CTmVar:                     Case[str]
-
-    CTmVarIntoduction:          Case[str, 'Ctm']
-    CTmAssignment:              Case['Ctm', 'CTm']
-
-    CTmFunction:                Case[str, List['CTm'], 'CTm']   # accept list of func args
+    # -----------------------------------------------------------------------------
+    # function
+    CTmFunction:                Case[str, List[Tuple['CTm', 'CTy']], Tuple['CTm', 'CTy']]   # accept list of func args
     CTmBlock:                   Case[List['CTm']]
     CTmReturn:                  Case[List['CTm']]               # return list of p
 
     CTmFunctionAccessor:        Case[str, 'CTm']                # function accessor/call
 
-    CTmConditional:             Case['CTm', 'Ctm', 'CTm']
+    # -----------------------------------------------------------------------------
+    CTmArrayIndexer:            Case['CTm']                     # C only support single indexing
+    CTmVar:                     Case[str]
 
+    CTmVarIntoduction:          Case[str, 'CTy', 'Ctm']
+    CTmAssignment:              Case['Ctm', 'CTm']
+
+    # -----------------------------------------------------------------------------
+    # flow control
+    CTmConditional:             Case['CTm', 'Ctm', 'CTm']       # if else in expression
+
+    # -----------------------------------------------------------------------------
+    # loop
+    CTmWhile:                   Case['Ctm', 'CTm']
+    CTmFor:                     Case['Ctm', 'CTm', 'CTm']
+    CTmForIn:                   Case[str, 'CTm', 'CTm']
+
+    # -----------------------------------------------------------------------------
+    # main
     CTmTemplate:                Case[str]
     CApp:                       Case['CTm', List['CTm']]
