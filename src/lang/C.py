@@ -4,75 +4,77 @@ from adt.decorator import adt
 from adt.case import Case
 from dataclasses import dataclass
 
+from src.monad.maybe import Maybe
+
 # C built-in
 @adt
-class CUnaryOperator:
-    Negate:                     Case
-    Not:                        Case
-    BitwiseNot:                 Case
+class CPrefixOperator:
+    NEGATE:                     Case
+    NOT:                        Case
+    BITWISENOT:                 Case
 
 @adt
-class CBinaryOperator:
-    Add:                        Case
-    Subtract:                   Case
-    Multiply:                   Case
-    Divide:                     Case
-    Modulus:                    Case
+class CInfixOperator:
+    ADD:                        Case
+    SUBTRACT:                   Case
+    MULTIPLY:                   Case
+    DIVIDE:                     Case
+    MODULUS:                    Case
 
-    EqualTo:                    Case
-    NotEqualTo:                 Case
-    LessThan:                   Case
-    LessThanOrEqualTo:          Case
-    Greaterthan:                Case
-    GreaterThanOrEqualTo:       Case
+    EQUALTO:                    Case
+    NOTEQUALTO:                 Case
+    LESSTHAN:                   Case
+    LESSTHANOREQUALTO:          Case
+    GREATERTHAN:                Case
+    GREATERTHANOREQUALTO:       Case
 
-    And:                        Case
-    Or:                         Case
+    AND:                        Case
+    OR:                         Case
 
-    BitwiseAnd:                 Case
-    BitwiseOr:                  Case
-    BitwiseXor:                 Case
+    BITWISEAND:                 Case
+    BITWISEOR:                  Case
+    BITWISEXOR:                 Case
 
-    ShiftLeft:                  Case
-    ShiftRight:                 Case
-    ZeroFillShiftRight:         Case
+    SHIFTLEFT:                  Case
+    SHIFTRIGHT:                 Case
+    ZEROFILLSHIFTRIGHT:         Case
 
 @adt
 class CTy:
     # -----------------------------------------------------------------------------
     # integer
-    CTyChar:                    Case
-    CTyUChar:                   Case
+    CHAR:                    Case
+    UCHAR:                   Case
 
-    CTyShort:                   Case
-    CTyUShort:                  Case
+    SHORT:                   Case
+    USHORT:                  Case
 
-    CTyInt:                     Case
-    CTyUInt:                    Case
+    INT:                     Case
+    UINT:                    Case
 
-    CTyLong:                    Case
-    CTyULong:                   Case
+    LONG:                    Case
+    ULONG:                   Case
 
     # -----------------------------------------------------------------------------
     # floating point
-    CTyFloat:                   Case
-    CTyDouble:                  Case
-    CTyLongDouble:              Case
+    FLOAT:                   Case
+    DOUBLE:                  Case
+    LONGDOUBLE:              Case
 
     # -----------------------------------------------------------------------------
     # sugar
-    CTyString:                  Case[int]
-    CTyBoolean:                 Case
+    STRING:                  Case[int]
+    BOOLEAN:                 Case
 
     # -----------------------------------------------------------------------------
-    CTyArray:                   Case['CTy', int]
-    CTyVoid:                    Case
-    CTyAlias:                   Case[str, 'CTy']
-    CTyVar:                     Case[str]                       # same with alias but point to any type
-    CTyPointer:                 Case['CTy']
+    ARRAY:                   Case['CTy', int]
+    VOID:                    Case
+    #CTYALIAS:                   Case[str, 'CTy']
+    #CTYVAR:                     Case[str]                       # same with alias but point to any type
+    POINTER:                 Case['CTy']
 
-    #CTyStruct:                  Case[str, 'CTy']
-    CTyStruct:                  Case[List[Tuple[str, 'CTy']]]
+    #CTYSTRUCT:                  Case[str, 'CTy']
+    STRUCT:                  Case[List[Tuple[str, 'CTy']]]
 
 
 @adt
@@ -83,66 +85,71 @@ class CTm:
     # numerical
     # integer
     # 1 byte
-    CTmChar:                    Case[int]                       # C singed char
-    CTmUChar:                   Case[int]                       # C unsigned char
+    CHAR:                    Case[int]                       # C singed char
+    UCHAR:                   Case[int]                       # C unsigned char
 
     # 2 bytes
-    CTmShort:                   Case[int]                       # C short
-    CTmUShort:                  Case[int]                       # C unsigned short
+    SHORT:                   Case[int]                       # C short
+    USHORT:                  Case[int]                       # C unsigned short
 
     # 4 bytes
-    CTmInt:                     Case[int]                       # C int
-    CTmUInt:                    Case[int]                       # C unsigned int
+    INT:                     Case[int]                       # C int
+    UINT:                    Case[int]                       # C unsigned int
 
     # 8 bytes
-    CTmLong:                    Case[int]                       # C long
-    CTmULong:                   Case[int]                       # C unsigned long
+    LONG:                    Case[int]                       # C long
+    ULONG:                   Case[int]                       # C unsigned long
 
     # floating point
-    CTmFloat:                   Case[Decimal]
-    CTmDouble:                  Case[Decimal]
-    CTmLongDouble:              Case[Decimal]
+    FLOAT:                   Case[Decimal]
+    DOUBLE:                  Case[Decimal]
+    LONGDOUBLE:              Case[Decimal]
 
     # -----------------------------------------------------------------------------
-    CTmString:                  Case[str]
-    CTmBoolean:                 Case[bool]
-    CTmArray:                   Case[List['CTm']]
-    CTmStruct:                  Case[List[Tuple[str, 'CTm']]]
-    CTmPointer:                 Case[str]
-    CTmPointerAddr:             Case[str]
-    CTmPointerData:             Case[str]
+    STRING:                  Case[str]
+    BOOLEAN:                 Case[bool]
+    ARRAY:                   Case[List['CTm']]
+    STRUCT:                  Case[List[Tuple[str, 'CTm']]]
+    POINTER:                 Case[str]
+    POINTERADDR:             Case[str]
+    POINTERDATA:             Case[str]
 
     # -----------------------------------------------------------------------------
     # operation call
-    CTmUnary:                   Case[CUnaryOperator, 'CTm']
-    CTmBinary:                  Case[CBinaryOperator, 'CTm', 'CTm']
+    PREFIX:                  Case[CPrefixOperator, 'CTm']
+    INFIX:                   Case[CInfixOperator, 'CTm', 'CTm']
 
     # -----------------------------------------------------------------------------
     # function
-    CTmFunction:                Case[str, List[Tuple['CTm', 'CTy']], Tuple['CTm', 'CTy']]   # accept list of func args
-    CTmBlock:                   Case[List['CTm']]
-    CTmReturn:                  Case[List['CTm']]               # return list of p
+    FUNCTION:                Case[str, List[Tuple['CTm', 'CTy']], Tuple['CTm', 'CTy']]   # accept list of func args
+    BLOCK:                   Case[List['CTm']]               # expression enclose in {}
+    RETURN:                  Case[List['CTm']]               # return list of p
 
-    CTmFunctionAccessor:        Case[str, 'CTm']                # function accessor/call
+    FUNCTIONACCESSOR:        Case[str, 'CTm']                # function accessor/call
 
     # -----------------------------------------------------------------------------
-    CTmArrayIndexer:            Case['CTm']                     # C only support single indexing
-    CTmVar:                     Case[str]
+    ARRAYINDEXER:            Case['CTm']                     # C only support single indexing
+    VAR:                     Case[str]
 
-    CTmVarIntoduction:          Case[str, 'CTy', 'Ctm']
-    CTmAssignment:              Case['Ctm', 'CTm']
+    VARINTODUCTION:          Case[str, 'CTy', 'Ctm']
+    ASSIGNMENT:              Case['Ctm', 'CTm']
 
     # -----------------------------------------------------------------------------
     # flow control
-    CTmConditional:             Case['CTm', 'Ctm', 'CTm']       # if else in expression
+    CONDITIONAL:             Case['CTm', 'Ctm', 'CTm']       # if else in expression
+    IFELSE:                  Case['CTm', 'CTm', Maybe['CTm']]
 
     # -----------------------------------------------------------------------------
     # loop
-    CTmWhile:                   Case['Ctm', 'CTm']
-    CTmFor:                     Case['Ctm', 'CTm', 'CTm']
-    CTmForIn:                   Case[str, 'CTm', 'CTm']
+    WHILE:                   Case['Ctm', 'CTm']
+    FOR:                     Case['Ctm', 'CTm', 'CTm']       # left, right, inc/dec expression
+    #FORIN:                   Case[str, 'CTm', 'CTm']
+
+    BREAK:                   Case[str]
+    CONTINUE:                Case[str]
+
 
     # -----------------------------------------------------------------------------
     # main
-    CTmTemplate:                Case[str]
-    CApp:                       Case['CTm', List['CTm']]
+    #CTmTemplate:                Case[str]
+    APP:                     Case['CTm', List['CTm']]        # return, list of args
