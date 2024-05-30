@@ -7,7 +7,7 @@ from src.typeClass.monad import monad, _return
 from src.typeClass.monoid import mappend
 from src.monad._except import Except, returnExcept, runExcept, throwE
 from src.monad.either import Either, returnEither
-from src.type.twTy import TwTm, TwTy
+from src.type.twTy import TwTm, TwTy, TwCommonCommand, TwTaskCommand
 from src.lang.C import CTm, CTy
 
 A = TypeVar('A') # reader
@@ -21,6 +21,7 @@ type AST = List[CTm]
 @adt
 class Placement:
     NIL:            Case
+    INTRO:          Case[str]
     OPT:            Case[str]
     VAR:            Case[str]
 
@@ -121,8 +122,9 @@ def modify(f: Callable[[S], S]) -> CodeGen:
 ###################################################################
 # generator
 
+# generate a unique var name
 def freshVarName():
-    return monad(modify())
+    return monad(modify(lambda a: a+1), lambda count: returnCodeGen(f'var{count}'))
 
 def toIndexer():
     pass
@@ -131,23 +133,29 @@ def toIndexer():
 def lookupTmVarBind(name: str) -> CodeGen[Tuple[TwTy, str]]:
     return monad(asks(lambda ctx: ctx.tmBindEnv), lambda env: returnCodeGen((env[name], name)) if name in env else returnCodeGen2(throwE('')))
 
-# assignment codegen
+# general codegen
 def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
-    def _intLiteralPlace():
-        def _intro():
-            return CTm.VARINTODUCTION()
+    def _intLiteralPlace(_int):
+        def _intro(name):
+            return CTm.VARINTODUCTION(name, CTy.INT, CTm.INT(_int))
 
-        def _assign():
-            pass
+        def _assign(name):
+            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.INT(_int))
 
         return placement.match(
-            nil=lambda : ,
+            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
+            intro=lambda a:
             opt=lambda a: ,
             var=lambda a:
         )
 
     return tm.match(
-        TmInt=lambda a: [CTm.ASSIGNMENT(CTm.ARRAYINDEXER(CTm.VAR(varName), CTm.INT('int')), int(a))],
+        TmInt=lambda a: _intLiteralPlace(),
         TmString=lambda a: [CTm.ASSIGNMENT(CTm.ARRAYINDEXER(varName=CTm.VAR(varName), varType=CTm.STRING('str'), lit=a))],
         TmDouble=lambda a: [CTm.ASSIGNMENT(CTm.ARRAYINDEXER(varName=CTm.VAR(varName), varType=CTm.DOUBLE('double'), lit=a))],
         TmVar=lambda a: AST.AST(), lit=a)
+
+
+# command based codegen
+def inferCommnad():
+    pass

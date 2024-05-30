@@ -22,20 +22,16 @@ class TwTm:
 
 @adt
 class TwCommonCommand:
-    AddGlobalVar        :   Case[TwTm, TwTm]
-    AddQueue            :   Case[TwTm, TwTm] # name, length
+    AddGlobalVar        :   Case[str, TwTm]
+    AddQueue            :   Case[str, TwTm] # name, length
 
 @adt
 class TwTaskCommand:
-    AddVar              :   Case[TwTm, TwTm]
-    QueueReceive        :   Case[TwTm, TwTm]
-    QueueSend           :   Case[TwTm, TwTm]
+    AddVar              :   Case[str, TwTm]
+    QueueReceive        :   Case[str, TwTm]
+    QueueSend           :   Case[str, TwTm]
     PrintString         :   Case[TwTm]
 
 @adt
-class TwCommand:
-    Command             :   Case[str, List[TwTm]]     # -> name, list of params
-
-@adt
 class TwProg:
-    Prog                :   Case[List[List[TwCommand]]]
+    Prog                :   Case[List[TwCommonCommand], List[List[TwTaskCommand]]]

@@ -132,7 +132,7 @@ class CTm:
     VAR:                     Case[str]
 
     VARINTODUCTION:          Case[str, 'CTy', 'Ctm']
-    ASSIGNMENT:              Case['Ctm', 'CTm']
+    VARASSIGNMENT:          Case['Ctm', 'CTm']
 
     # -----------------------------------------------------------------------------
     # flow control
