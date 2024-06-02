@@ -20,9 +20,9 @@ type AST = List[CTm]
 
 @adt
 class Placement:
-    NIL:            Case
+    NIL:            Case                #
     INTRO:          Case[str]
-    OPT:            Case[str]
+    #OPT:            Case[str]
     VAR:            Case[str]
 
 # R -> Ctx
@@ -136,6 +136,11 @@ def lookupTmVarBind(name: str) -> CodeGen[Tuple[TwTy, str]]:
 # general codegen
 def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
     def _intLiteralPlace(_int):
+        # TODO: enable char&short support
+        # NOTE: _declare func locate in var intro
+        # def _declare():
+        #    pass
+
         def _intro(name):
             return CTm.VARINTODUCTION(name, CTy.INT, CTm.INT(_int))
 
@@ -143,16 +148,65 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
             return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.INT(_int))
 
         return placement.match(
+            # FIXME how about no assigment for nil, just pass down literal
             nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
-            intro=lambda a:
-            opt=lambda a: ,
-            var=lambda a:
+            intro=lambda a: returnExcept([_intro(a)]),
+            var=lambda a: returnExcept([_assign(a)])
+            #opt=lambda a:
+        )
+
+    def _stringLiteralPlace(_str):
+        # TODO: support resp in ptr
+        def _intro(name):
+            return CTm.VARINTODUCTION(name, CTy.STRING, CTm.STRING(_str))
+
+        def _assign(name):
+            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.STRING(_str))
+
+        return placement.match(
+            # FIXME how about no assigment for nil, just pass down literal
+            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
+            intro=lambda a: returnExcept([_intro(a)]),
+            var=lambda a: returnExcept([_assign(a)])
+            #opt=lambda a:
+        )
+
+    def _doubleLiteralPlace(_fp):
+        # TODO: support more length option, float & long double
+        def _intro(name):
+            return CTm.VARINTODUCTION(name, CTy.DOUBLE, CTm.DOUBLE(_fp))
+
+        def _assign(name):
+            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_fp))
+
+        return placement.match(
+            # FIXME how about no assigment for nil, just pass down literal
+            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
+            intro=lambda a: returnExcept([_intro(a)]),
+            var=lambda a: returnExcept([_assign(a)])
+            #opt=lambda a:
+        )
+
+    def _boolLiteralPlace(_bool):
+        def _intro(name):
+            return CTm.VARINTODUCTION(name, CTy.BOOLEAN, CTm.BOOLEAN(_bool))
+
+        def _assign(name):
+            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_bool))
+
+        return placement.match(
+            # FIXME how about no assigment for nil, just pass down literal
+            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
+            intro=lambda a: returnExcept([_intro(a)]),
+            var=lambda a: returnExcept([_assign(a)])
+            #opt=lambda a:
         )
 
     return tm.match(
-        TmInt=lambda a: _intLiteralPlace(),
-        TmString=lambda a: [CTm.ASSIGNMENT(CTm.ARRAYINDEXER(varName=CTm.VAR(varName), varType=CTm.STRING('str'), lit=a))],
-        TmDouble=lambda a: [CTm.ASSIGNMENT(CTm.ARRAYINDEXER(varName=CTm.VAR(varName), varType=CTm.DOUBLE('double'), lit=a))],
+        tmint=lambda a: _intLiteralPlace(a),
+        tmstring=lambda a: _stringLiteralPlace(a),
+        tmdouble=lambda a: _doubleLiteralPlace(a),
+        tmbool=lambda a: _boolLiteralPlace(a),
         TmVar=lambda a: AST.AST(), lit=a)
 
 
