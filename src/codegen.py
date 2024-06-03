@@ -2,6 +2,7 @@ from typing import Any, List, Dict, Tuple, Callable, TypeVar, Generic
 from adt.decorator import adt
 from adt.case import Case
 from dataclasses import dataclass
+from functools import reduce
 
 from src.typeClass.monad import monad, _return
 from src.typeClass.monoid import mappend
@@ -149,9 +150,9 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
-            intro=lambda a: returnExcept([_intro(a)]),
-            var=lambda a: returnExcept([_assign(a)])
+            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
+            intro=lambda a: returnCodeGen([_intro(a)]),
+            var=lambda a: returnCodeGen([_assign(a)])
             #opt=lambda a:
         )
 
@@ -165,9 +166,9 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
-            intro=lambda a: returnExcept([_intro(a)]),
-            var=lambda a: returnExcept([_assign(a)])
+            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
+            intro=lambda a: returnCodeGen([_intro(a)]),
+            var=lambda a: returnCodeGen([_assign(a)])
             #opt=lambda a:
         )
 
@@ -181,9 +182,9 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
-            intro=lambda a: returnExcept([_intro(a)]),
-            var=lambda a: returnExcept([_assign(a)])
+            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
+            intro=lambda a: returnCodeGen([_intro(a)]),
+            var=lambda a: returnCodeGen([_assign(a)])
             #opt=lambda a:
         )
 
@@ -196,17 +197,39 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnExcept([_intro(b)])),
-            intro=lambda a: returnExcept([_intro(a)]),
-            var=lambda a: returnExcept([_assign(a)])
+            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
+            intro=lambda a: returnCodeGen([_intro(a)]),
+            var=lambda a: returnCodeGen([_assign(a)])
             #opt=lambda a:
         )
+
+    def _arrayLiteralPlace(_list: List[TwTm]):
+        def _intro(name, _ctmlist):
+            return CTm.VARINTODUCTION(name, CTy.ARRAY, CTm.ARRAY(_ctmlist))
+
+        def _assign(name, _ctmlist):
+            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.ARRAY(_ctmlist))
+
+        def _traverse():
+            return reduce(lambda a, acc: monad(acc, lambda b:
+                                                monad(infer(a, placement), lambda c:
+                                                    returnCodeGen(b[0]+[c[0]]))), _list, returnCodeGen([]))
+
+        return monad(_traverse(), lambda ctmlist: placement.match(
+            # FIXME how about no assigment for nil, just pass down literal
+            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b, ctmlist)])),
+            intro=lambda a: returnCodeGen([_intro(a, ctmlist)]),
+            var=lambda a: returnCodeGen([_assign(a, ctmlist)])
+            #opt=lambda a:
+        )
+
 
     return tm.match(
         tmint=lambda a: _intLiteralPlace(a),
         tmstring=lambda a: _stringLiteralPlace(a),
         tmdouble=lambda a: _doubleLiteralPlace(a),
         tmbool=lambda a: _boolLiteralPlace(a),
+        tmarray=lambda t, a: _arrayLiteralPlace(t, a),
         TmVar=lambda a: AST.AST(), lit=a)
 
 
