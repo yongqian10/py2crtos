@@ -5,33 +5,33 @@ from adt.case import Case
 
 @adt
 class TwTm:
-    TmInt               :   Case[int]
-    TmBool              :   Case[bool]
-    TmString            :   Case[str]
-    TmFloat             :   Case[Decimal]
-    TmVar               :   Case[str]
+    INT                 :   Case[int]
+    BOOL                :   Case[bool]
+    STRING              :   Case[str]
+    FLOAT               :   Case[Decimal]
+    VAR                 :   Case[str]
 
-    # TODO support complex type
-    #LISTTYPE            :   Case[List['TwLit']]
-    #DICTTYPE            :   Case[Dict[str, 'TwLit']]
+    UNDEFINED           :   Case
+    LISTTYPE            :   Case[List['TwTm']]
+    DICTTYPE            :   Case[Dict[str, 'TwTm']]
+
+    PREFIXOPS           :   Case[]
 
     # TODO: support custom type
     #RECORDTYPE          :   Case[Any]
-    #PYBITTYPE           :   Case[int]
-    #PYBITSTRINGTYPE     :   Case[PyBitStringType, int]
 
 @adt
 class TwCommonCommand:
-    AddGlobalVar        :   Case[str, TwTm]
-    AddQueue            :   Case[str, TwTm] # name, length
+    ADDGLOBALVAR        :   Case[str, TwTm]
+    ADDQUEUE            :   Case[str, TwTm] # name, length
 
 @adt
 class TwTaskCommand:
-    AddVar              :   Case[str, TwTm]
-    QueueReceive        :   Case[str, TwTm]
-    QueueSend           :   Case[str, TwTm]
-    PrintString         :   Case[TwTm]
+    ADDVAR              :   Case[str, TwTm]
+    QUEUERECEIVE        :   Case[str, TwTm]
+    QUEUESEND           :   Case[str, TwTm]
+    PRINTSTRING         :   Case[TwTm]
 
 @adt
 class TwProg:
-    Prog                :   Case[List[TwCommonCommand], List[List[TwTaskCommand]]]
+    PROG                :   Case[List[TwCommonCommand], List[List[TwTaskCommand]]]
