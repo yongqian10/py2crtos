@@ -51,6 +51,9 @@ def returnCodeGen(pure: A) -> CodeGen[A]:
 def returnCodeGen2(_except: Except) -> CodeGen[A]:
     return CodeGen.CODEGEN(lambda t: returnExcept(_except))
 
+def failCodeGen(errormsg: str) -> CodeGen:
+    return CodeGen.CODEGEN(lambda t: throwE(errormsg))
+
 def runCodeGen(f: CodeGen, r, s) -> Except:
     return f.match(codegen=lambda a : a(r, s))
 
@@ -139,33 +142,6 @@ def toIndexer():
 def lookupTmVarBind(name: str) -> CodeGen[Tuple[TwTy, str]]:
     return monad(asks(lambda ctx: ctx.tmBindEnv), lambda env: returnCodeGen((env[name], name)) if name in env else returnCodeGen2(throwE('')))
 
-def copyObj(name, obj: CTm, typ: CTy) -> CTm:
-    return typ.match(
-        char=lambda : CTm.VARASSIGNMENT(CTm.VAR(name), CTm.CHAR(obj)),
-        uchar=lambda : CTm.VARASSIGNMENT(CTm.VAR(name), CTm.UCHAR(obj)),
-        short=lambda : CTm.VARASSIGNMENT(CTm.VAR(name), CTm.SHORT(obj)),
-        ushort=lambda : CTm.VARASSIGNMENT(CTm.VAR(name), CTm.USHORT(obj)),
-        int=lambda : CTm.VARASSIGNMENT(CTm.VAR(name), CTm.INT(obj)),
-        uint=lambda a:
-        long=lambda a:
-        ulong=lambda a:
-        float=lambda a:
-        double=lambda a:
-        longdouble=lambda a:
-        string=lambda a:
-        boolean=lambda a:
-        array=lambda a:
-        void=lambda a:
-        #ctyalias=lambda a:
-        #ctyvar=lambda a:
-        pointer=lambda a:
-        #ctystruct=lambda a:
-        struct=lambda a:
-
-
-def refObj():
-    pass
-
 # general codegen
 def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
     def _intLiteralPlace(_int):
@@ -178,7 +154,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
             return CTm.VARINTODUCTION(name, CTy.INT, CTm.INT(_int))
 
         def _assign(name):
-            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.INT(_int))
+            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.INT(_int))
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
@@ -194,7 +170,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
             return CTm.VARINTODUCTION(name, CTy.STRING, CTm.STRING(_str))
 
         def _assign(name):
-            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.STRING(_str))
+            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.STRING(_str))
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
@@ -210,7 +186,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
             return CTm.VARINTODUCTION(name, CTy.DOUBLE, CTm.DOUBLE(_fp))
 
         def _assign(name):
-            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_fp))
+            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_fp))
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
@@ -225,7 +201,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
             return CTm.VARINTODUCTION(name, CTy.BOOLEAN, CTm.BOOLEAN(_bool))
 
         def _assign(name):
-            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_bool))
+            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_bool))
 
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
@@ -241,7 +217,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
             return CTm.VARINTODUCTION(name, CTy.ARRAY, CTm.ARRAY(_ctmlist))
 
         def _assign(name, _ctmlist):
-            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.ARRAY(_ctmlist))
+            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.ARRAY(_ctmlist))
 
         def _traverse():
             return reduce(lambda a, acc: monad(acc, lambda b:
@@ -259,27 +235,34 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
 
     def _varPlace(_var):
         def _intro(name):
-            return monad(lookupTmVarBind(name), lambda _type: CTm.VARINTODUCTION(name, _type))
+            return monad(lookupTmVarBind(name), lambda t: CTm.VARINTODUCTION(CTm.VAR(name), t))
 
-        def _assign(name):
-            return CTm.VARASSIGNMENT(CTm.VAR(name), CTm.ARRAY(_ctmlist))
+        def _copyassign(name):
+            return monad(lookupTmVarBind(name), lambda t: CTm.VARCOPYASSIGNMENT(CTm.VAR(name), _var))
+
+        def _refassign(name):
+            return monad(lookupTmVarBind(name), lambda t: CTm.VARREFASSIGNMENT(CTm.VAR(name), _var))
 
         return placement.match(
-            # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
+            nil=lambda : returnCodeGen([CTm.VAR(_var)]),
             intro=lambda a: returnCodeGen([_intro(a)]),
             # TODO: enable copy by ref
-            var=lambda a, mode: returnCodeGen([_assign(a)])
+            var=lambda a, mode: mode.match(
+                copy=lambda: returnCodeGen([_copyassign(a)]),
+                ref=lambda: returnCodeGen([_refassign(a)])),
             #opt=lambda a:
         )
+
+    def _funcPlace():
+        pass
 
     return tm.match(
         tmint=lambda a: _intLiteralPlace(a),
         tmstring=lambda a: _stringLiteralPlace(a),
         tmdouble=lambda a: _doubleLiteralPlace(a),
         tmbool=lambda a: _boolLiteralPlace(a),
-        tmarray=lambda t, a: _arrayLiteralPlace(t, a),
-        TmVar=lambda a: AST.AST(), lit=a)
+        tmarray=lambda t, a: _arrayLiteralPlace(a),
+        tmvar=lambda a: _varPlace(a))
 
 
 # command based codegen

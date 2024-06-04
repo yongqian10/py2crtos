@@ -41,6 +41,7 @@ class CInfixOperator:
 
 @adt
 class CTy:
+    VOID:                    Case
     # -----------------------------------------------------------------------------
     # integer
     CHAR:                    Case
@@ -68,7 +69,6 @@ class CTy:
 
     # -----------------------------------------------------------------------------
     ARRAY:                   Case['CTy', int]
-    VOID:                    Case
     #CTYALIAS:                   Case[str, 'CTy']
     #CTYVAR:                     Case[str]                       # same with alias but point to any type
     POINTER:                 Case['CTy']
@@ -132,7 +132,8 @@ class CTm:
     VAR:                     Case[str]
 
     VARINTODUCTION:          Case[str, 'CTy', 'Ctm']
-    VARASSIGNMENT:          Case['Ctm', 'CTm']
+    VARCOPYASSIGNMENT:      Case['CTm', 'CTm']
+    VARREFASSIGNMENT:       Case['CTm', 'CTm']
 
     # -----------------------------------------------------------------------------
     # flow control
