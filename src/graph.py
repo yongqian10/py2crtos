@@ -8,27 +8,26 @@ from networkx import DiGraph, topological_sort, dfs_preorder_nodes, find_cycle
 from decimal import Decimal
 import re
 
-from efx_ipmgr.production_api.helper import merge_two_dicts, _log2
-from efx_ipmgr.production_api.type_class.applicative import alternate
-from efx_ipmgr.production_api.type_class.monad import monad
-#from efx_ipmgr.production_api.type_class.eval import Eval
-from efx_ipmgr.production_api.type_class.list import uncons
-from efx_ipmgr.production_api.type_class.show import show
-from efx_ipmgr.production_api.type_class.unlift import Unlift
-from efx_ipmgr.production_api.monad.either import Either
-from efx_ipmgr.production_api.monad.maybe import Maybe
-from efx_ipmgr.production_api.parser.parser import *
-from efx_ipmgr.production_api.type.fb_type import Fb, SyntaxError, InterpretError, addNote
-from efx_ipmgr.production_api.type.hdl_type import HDLType, HDLBitStringType, getValue
-from efx_ipmgr.production_api.type.node_type import NodeType, getKey, isParamBitstring, getName
-from efx_ipmgr.production_api.type.expr_type import ArithmeticExpr, ConditionalExpr, FuncExpr, LogicalExpr, RelationalExpr
-from efx_ipmgr.production_api.eval.arithmetic_eval import Eval
-from efx_ipmgr.production_api.eval.func_eval import Eval
-from efx_ipmgr.production_api.helper import convertBinaryToUnsigned, convertHexToUnsigned, convertBinaryToSigned, convertHexToSigned, convertDecToSigned
-from efx_ipmgr.production_api.checker.checker import checkAssignment
-from efx_ipmgr.production_api.type.graph_type import *
-from efx_ipmgr.production_api.type.graph_type import _identity, _bail, _chainWithSkip, _getNonExistingNodeName
-from efx_ipmgr.production_api.type.component_type import *
+from src.helper import merge_two_dicts, _log2
+from src.typeClass.applicative import alternate
+from src.typeClass.monad import monad
+from src.typeClass.list import uncons
+from src.typeClass.show import show
+from src.typeClass.unlift import Unlift
+from src.monad.either import Either
+from src.monad.maybe import Maybe
+from src.parser.parser import *
+from src.type.fb_type import Fb, SyntaxError, InterpretError, addNote
+from src.type.hdl_type import HDLType, HDLBitStringType, getValue
+from src.type.node_type import NodeType, getKey, isParamBitstring, getName
+from src.type.expr_type import ArithmeticExpr, ConditionalExpr, FuncExpr, LogicalExpr, RelationalExpr
+from src.eval.arithmetic_eval import Eval
+from src.eval.func_eval import Eval
+from src.helper import convertBinaryToUnsigned, convertHexToUnsigned, convertBinaryToSigned, convertHexToSigned, convertDecToSigned
+from src.checker.checker import checkAssignment
+from src.type.graph_type import *
+from src.type.graph_type import _identity, _bail, _chainWithSkip, _getNonExistingNodeName
+from src.type.component_type import *
 
 def _linkVectorNode(node: NodeType) -> Graph[Any]:
     return monad(getNode(f'param {getName(node)} vector_right'), lambda a:

@@ -253,7 +253,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
             #opt=lambda a:
         )
 
-    def _funcPlace():
+    def _funcPlace(args, block):
         pass
 
     return tm.match(
