@@ -15,7 +15,7 @@ A = TypeVar('A') # reader
 
 @dataclass
 class Ctx:
-    tmBindEnv: Dict[str, TwTm]
+    tmBindEnv: Dict[str, TwTy]
 
 type AST = List[CTm]
 
@@ -142,8 +142,16 @@ def toIndexer():
 def lookupTmVarBind(name: str) -> CodeGen[Tuple[TwTy, str]]:
     return monad(asks(lambda ctx: ctx.tmBindEnv), lambda env: returnCodeGen((env[name], name)) if name in env else returnCodeGen2(throwE('')))
 
+# add var into closure
+def addTmVarBind(name: str, typ: TwTy, codegen: CodeGen):
+    return local(lambda ctx: ctx._replace(tmBindEnv={**ctx.tmBindEnv, **{name: typ}}), codegen=codegen)
+
+# NOTE: ha, we not going to do curry
+def addTmVarBinds(namedict: Dict[str, TwTy], codegen: CodeGen):
+    return local(lambda ctx: ctx._replace(tmBindEnv={**ctx.tmBindEnv, **namedict}), codegen=codegen)
+
 # general codegen
-def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
+def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, CTy)]:
     def _intLiteralPlace(_int):
         # TODO: enable char&short support
         # NOTE: _declare func locate in var intro
@@ -246,15 +254,20 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[AST]:
         return placement.match(
             nil=lambda : returnCodeGen([CTm.VAR(_var)]),
             intro=lambda a: returnCodeGen([_intro(a)]),
-            # TODO: enable copy by ref
             var=lambda a, mode: mode.match(
                 copy=lambda: returnCodeGen([_copyassign(a)]),
                 ref=lambda: returnCodeGen([_refassign(a)])),
             #opt=lambda a:
         )
 
-    def _funcPlace(args, block):
-        pass
+    def _funcPlace(args: Dict[str, TwTy], block: TwTm, ret: TwTy):
+        def _infer(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
+            return monad(freshVarName(), lambda freshname:
+                         monad(infer(tm, placement.VAR(freshname)), lambda t:
+                               monad(_intro(freshname), lambda tmvar:
+                              )))
+
+        return monad(addTmVarBinds(args, _infer(block, ret, Placement.INTRO())), lambda t:
 
     return tm.match(
         tmint=lambda a: _intLiteralPlace(a),
