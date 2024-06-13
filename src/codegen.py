@@ -260,14 +260,22 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, CTy)]:
             #opt=lambda a:
         )
 
-    def _funcPlace(args: Dict[str, TwTy], block: TwTm, ret: TwTy):
-        def _infer(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
-            return monad(freshVarName(), lambda freshname:
-                         monad(infer(tm, placement.VAR(freshname)), lambda t:
-                               monad(_intro(freshname), lambda tmvar:
-                              )))
+    # FIXME: return should within block or separate?
+    def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy):
+        # skip for now no subtype supported
+        def _inferSubType(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
+            pass
 
-        return monad(addTmVarBinds(args, _infer(block, ret, Placement.INTRO())), lambda t:
+        def _inferFunc():
+            return monad(addTmVarBinds(args, infer(block, ret, Placement.INTRO())), lambda ast:
+                         returnCodeGen(CTm.FUNCTION(name, inferType(args), CTm.BLOCK(ast[0]), CTm.RETURN())))
+
+        return placement.match(
+            nil=lambda : _inferFunc(),
+            intro=lambda a: _inferFunc(),
+            var=lambda a, mode: failCodeGen('cant assign func intro to var')
+            #opt=lambda a:
+        )
 
     return tm.match(
         tmint=lambda a: _intLiteralPlace(a),
