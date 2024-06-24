@@ -152,97 +152,77 @@ def addTmVarBinds(namedict: Dict[str, TwTy], codegen: CodeGen):
 
 # general codegen
 def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
+
     def _intLiteralPlace(_int) -> CodeGen[Tuple(AST, TwTy)]:
         # NOTE: intro goes to TmFix
         # TODO: enable char&short support
         return placement.match(
-            nil=lambda : returnCodeGen(([CTm.INT(_int)], TwTy.INT)),
+            nil=lambda : returnCodeGen(([CTm.INT(_int)], TwTy.INT())),
             #intro=lambda a: returnCodeGen([_intro(a)]),
-            var=lambda a, mode: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT))
+            var=lambda a, mode: mode.match(
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT())),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT())))
             #opt=lambda a:
         )
 
     def _stringLiteralPlace(_str) -> CodeGen[Tuple(AST, TwTy)]:
-        # TODO: support resp in ptr
         return placement.match(
-            nil=lambda : returnCodeGen(CTm.STRING(_str)),
-            var=lambda a, mode: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING))
-            #opt=lambda a:
+            nil=lambda : returnCodeGen(([CTm.STRING(_str)], TwTy.STRING())),
+            var=lambda a, mode: mode.match(
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING())),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING())))
         )
 
     def _doubleLiteralPlace(_fp) -> CodeGen[Tuple(AST, TwTy)]:
         # TODO: support more length option, float & long double
         return placement.match(
-            # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : returnCodeGen([CTm.DOUBLE(_fp)]),
-            #intro=lambda a: returnCodeGen([_intro(a)]),
-            var=lambda a, mode: returnCodeGen([_assign(a)])
-            #opt=lambda a:
+            nil=lambda : returnCodeGen(([CTm.DOUBLE(_fp)], TwTy.DOUBLE())),
+            var=lambda a, mode: mode.match(
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.DOUBLE(_fp))], TwTy.DOUBLE())),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.DOUBLE(_fp))], TwTy.DOUBLE())))
         )
 
-    def _boolLiteralPlace(_bool):
-        def _intro(name):
-            return CTm.VARINTODUCTION(name, CTy.BOOLEAN, CTm.BOOLEAN(_bool))
-
-        def _assign(name):
-            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_bool))
-
+    def _boolLiteralPlace(_bool) -> CodeGen[Tuple(AST, TwTy)]:
         return placement.match(
-            # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
-            intro=lambda a: returnCodeGen([_intro(a)]),
-            var=lambda a, mode: returnCodeGen([_assign(a)])
-            #opt=lambda a:
+            nil=lambda : returnCodeGen(([CTm.BOOLEAN(_bool)], TwTy.BOOLEAN())),
+            var=lambda a, mode: mode.match(
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.BOOLEAN(_bool))], TwTy.BOOLEAN())),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.BOOLEAN(_bool))], TwTy.BOOLEAN())))
         )
 
-    def _arrayLiteralPlace(_list: List[TwTm]):
+    def _arrayLiteralPlace(_list: List[TwTm]) -> CodeGen[Tuple(AST, TwTy)]:
         # TODO provide option to enable dynamic allocation
-        def _intro(name, _ctmlist):
-            return CTm.VARINTODUCTION(name, CTy.ARRAY, CTm.ARRAY(_ctmlist))
-
-        def _assign(name, _ctmlist):
-            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.ARRAY(_ctmlist))
-
         def _traverse():
             return reduce(lambda a, acc: monad(acc, lambda b:
                                                 monad(infer(a, placement), lambda c:
-                                                    returnCodeGen(b[0]+[c[0]]))), _list, returnCodeGen([]))
+                                                    returnCodeGen((b[0]+[c[0]], c[1])))), _list, returnCodeGen(([], TwTy.UNIT())))
 
         return monad(_traverse(), lambda ctmlist: placement.match(
             # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b, ctmlist)])),
-            intro=lambda a: returnCodeGen([_intro(a, ctmlist)]),
-            # TODO: enable copy by ref
-            var=lambda a, mode: returnCodeGen([_assign(a, ctmlist)])
+            nil=lambda : returnCodeGen(([CTm.ARRAY(ctmlist[0])], TwTy.ARRAY(ctmlist[1]))),#returnCodeGen([_intro(b, ctmlist)])),
+            var=lambda a, mode: mode.match(
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.ARRAY(ctmlist[0]))], TwTy.ARRAY(ctmlist[1]))),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.ARRAY(ctmlist[0]))], TwTy.ARRAY(ctmlist[1]))))
+            #intro=lambda a: returnCodeGen([_intro(a, ctmlist)]),
             #opt=lambda a:
         ))
 
-    def _varPlace(_var):
-        def _intro(name):
-            return monad(lookupTmVarBind(name), lambda t: CTm.VARINTODUCTION(CTm.VAR(name), t))
-
-        def _copyassign(name):
-            return monad(lookupTmVarBind(name), lambda t: CTm.VARCOPYASSIGNMENT(CTm.VAR(name), _var))
-
-        def _refassign(name):
-            return monad(lookupTmVarBind(name), lambda t: CTm.VARREFASSIGNMENT(CTm.VAR(name), _var))
-
+    def _varPlace(_var) -> CodeGen[Tuple(AST, TwTy)]:
         return placement.match(
-            nil=lambda : returnCodeGen([CTm.VAR(_var)]),
-            intro=lambda a: returnCodeGen([_intro(a)]),
+            nil=lambda : monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VAR(_var)], typ))),
             var=lambda a, mode: mode.match(
-                copy=lambda: returnCodeGen([_copyassign(a)]),
-                ref=lambda: returnCodeGen([_refassign(a)])),
+                copy=lambda: monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(_var), a)], typ))),
+                ref=lambda: monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(_var), a)], typ))))
             #opt=lambda a:
         )
 
-    def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy):
+    def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
         # skip for now no subtype supported
         #def _inferSubType(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
         #    pass
 
         def _inferFunc():
-            return monad(addTmVarBinds(args, infer(block, ret, Placement.NIL())), lambda ast:
+            return monad(addTmVarBinds(args, infer(block, Placement.NIL())), lambda ast:
                          # NOTE: C func not necessary has return
                          returnCodeGen(CTm.FUNCTION(name, inferTypes(args), CTm.BLOCK(ast[0]))))
 
@@ -254,13 +234,19 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
             #opt=lambda a:
         )
 
+    # Fix
+    def _introPlace(name: str, body: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
+        pass
+        #return monad(addTmVarBind())
+
     return tm.match(
-        tmint=lambda a: _intLiteralPlace(a),
-        tmstring=lambda a: _stringLiteralPlace(a),
-        tmdouble=lambda a: _doubleLiteralPlace(a),
-        tmbool=lambda a: _boolLiteralPlace(a),
-        tmarray=lambda t, a: _arrayLiteralPlace(a),
-        tmvar=lambda a: _varPlace(a))
+        int=lambda a: _intLiteralPlace(a),
+        string=lambda a: _stringLiteralPlace(a),
+        double=lambda a: _doubleLiteralPlace(a),
+        bool=lambda a: _boolLiteralPlace(a),
+        list=lambda t, a: _arrayLiteralPlace(a),
+        function=lambda name, args, bdy, retyp: _funcPlace(name, args, bdy, retyp),
+        var=lambda name, bdy, typ: _introPlace(name, bdy, typ))
 
 
 # command based codegen
