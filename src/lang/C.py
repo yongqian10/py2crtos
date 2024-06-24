@@ -121,7 +121,7 @@ class CTm:
 
     # -----------------------------------------------------------------------------
     # function
-    FUNCTION:                Case[str, List[Tuple['CTm', 'CTy']], Tuple['CTm', 'CTy']]   # accept list of func args
+    FUNCTION:                Case[str, List[Tuple['CTm', 'CTy']], 'CTm']   # accept list of func args
     BLOCK:                   Case[List['CTm']]               # expression enclose in {}
     RETURN:                  Case[List['CTm']]               # return list of p
 

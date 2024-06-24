@@ -15,7 +15,7 @@ class TwTm:
     LISTTYPE            :   Case[List['TwTm']]
     DICTTYPE            :   Case[Dict[str, 'TwTm']]
 
-    PREFIXOPS           :   Case[]
+    #PREFIXOPS           :   Case[]
 
     # TODO: support custom type
     #RECORDTYPE          :   Case[Any]

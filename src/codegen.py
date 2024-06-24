@@ -17,7 +17,7 @@ A = TypeVar('A') # reader
 class Ctx:
     tmBindEnv: Dict[str, TwTy]
 
-type AST = List[CTm]
+AST = List[CTm]
 
 @adt
 class PlacementMode:
@@ -107,7 +107,7 @@ def listens(codegen: CodeGen[A], f: Callable[[Tuple], Tuple]) -> CodeGen[Tuple[A
 
 # construct new writer
 # maybe we can simply accept a new state and replace it
-type S = int
+S = int
 
 def state(f: Callable[[S], Tuple[A, S]]) -> CodeGen[A]:
     def _state(s: S) -> Tuple[A, S]:
@@ -151,55 +151,31 @@ def addTmVarBinds(namedict: Dict[str, TwTy], codegen: CodeGen):
     return local(lambda ctx: ctx._replace(tmBindEnv={**ctx.tmBindEnv, **namedict}), codegen=codegen)
 
 # general codegen
-def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, CTy)]:
-    def _intLiteralPlace(_int):
+def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
+    def _intLiteralPlace(_int) -> CodeGen[Tuple(AST, TwTy)]:
+        # NOTE: intro goes to TmFix
         # TODO: enable char&short support
-        # NOTE: _declare func locate in var intro
-        # def _declare():
-        #    pass
-
-        def _intro(name):
-            return CTm.VARINTODUCTION(name, CTy.INT, CTm.INT(_int))
-
-        def _assign(name):
-            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.INT(_int))
-
         return placement.match(
-            # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
-            intro=lambda a: returnCodeGen([_intro(a)]),
-            var=lambda a, mode: returnCodeGen([_assign(a)])
+            nil=lambda : returnCodeGen(([CTm.INT(_int)], TwTy.INT)),
+            #intro=lambda a: returnCodeGen([_intro(a)]),
+            var=lambda a, mode: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT))
             #opt=lambda a:
         )
 
-    def _stringLiteralPlace(_str):
+    def _stringLiteralPlace(_str) -> CodeGen[Tuple(AST, TwTy)]:
         # TODO: support resp in ptr
-        def _intro(name):
-            return CTm.VARINTODUCTION(name, CTy.STRING, CTm.STRING(_str))
-
-        def _assign(name):
-            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.STRING(_str))
-
         return placement.match(
-            # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
-            intro=lambda a: returnCodeGen([_intro(a)]),
-            var=lambda a, mode: returnCodeGen([_assign(a)])
+            nil=lambda : returnCodeGen(CTm.STRING(_str)),
+            var=lambda a, mode: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING))
             #opt=lambda a:
         )
 
-    def _doubleLiteralPlace(_fp):
+    def _doubleLiteralPlace(_fp) -> CodeGen[Tuple(AST, TwTy)]:
         # TODO: support more length option, float & long double
-        def _intro(name):
-            return CTm.VARINTODUCTION(name, CTy.DOUBLE, CTm.DOUBLE(_fp))
-
-        def _assign(name):
-            return CTm.VARCOPYASSIGNMENT(CTm.VAR(name), CTm.DOUBLE(_fp))
-
         return placement.match(
             # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : monad(freshVarName(), lambda b: returnCodeGen([_intro(b)])),
-            intro=lambda a: returnCodeGen([_intro(a)]),
+            nil=lambda : returnCodeGen([CTm.DOUBLE(_fp)]),
+            #intro=lambda a: returnCodeGen([_intro(a)]),
             var=lambda a, mode: returnCodeGen([_assign(a)])
             #opt=lambda a:
         )
@@ -260,19 +236,20 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, CTy)]:
             #opt=lambda a:
         )
 
-    # FIXME: return should within block or separate?
     def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy):
         # skip for now no subtype supported
-        def _inferSubType(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
-            pass
+        #def _inferSubType(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
+        #    pass
 
         def _inferFunc():
-            return monad(addTmVarBinds(args, infer(block, ret, Placement.INTRO())), lambda ast:
-                         returnCodeGen(CTm.FUNCTION(name, inferType(args), CTm.BLOCK(ast[0]), CTm.RETURN())))
+            return monad(addTmVarBinds(args, infer(block, ret, Placement.NIL())), lambda ast:
+                         # NOTE: C func not necessary has return
+                         returnCodeGen(CTm.FUNCTION(name, inferTypes(args), CTm.BLOCK(ast[0]))))
 
         return placement.match(
             nil=lambda : _inferFunc(),
             intro=lambda a: _inferFunc(),
+            # NOTE: we r not following haskell syntax, func cant assign as value
             var=lambda a, mode: failCodeGen('cant assign func intro to var')
             #opt=lambda a:
         )
