@@ -224,7 +224,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
         def _inferFunc():
             return monad(addTmVarBinds(args, infer(block, Placement.NIL())), lambda ast:
                          # NOTE: C func not necessary has return
-                         returnCodeGen(CTm.FUNCTION(name, inferTypes(args), CTm.BLOCK(ast[0]))))
+                         monad(inferTypes(args), lambda ctyps: returnCodeGen(([CTm.FUNCTION(name, ctyps, CTm.BLOCK([ast[0]]))], ret))))
 
         return placement.match(
             nil=lambda : _inferFunc(),
@@ -234,10 +234,10 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
             #opt=lambda a:
         )
 
-    # Fix
-    def _introPlace(name: str, body: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
-        pass
-        #return monad(addTmVarBind())
+    # intro var with closure
+    def _introPlace(var: str, closure: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
+        return monad(addTmVarBind(var, typ, closure), lambda ast:
+                     monad(inferType(typ), lambda ctyp: returnCodeGen(([CTm.BLOCK([CTm.VARINTRODUCTION(var, ctyp), ast[0]])], typ))))
 
     return tm.match(
         int=lambda a: _intLiteralPlace(a),
@@ -246,8 +246,29 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
         bool=lambda a: _boolLiteralPlace(a),
         list=lambda t, a: _arrayLiteralPlace(a),
         function=lambda name, args, bdy, retyp: _funcPlace(name, args, bdy, retyp),
-        var=lambda name, bdy, typ: _introPlace(name, bdy, typ))
+        #var=lambda name, args, bdy, retyp: _funcPlace(name, args, bdy, retyp),
+        intro=lambda name, bdy, typ: _introPlace(name, bdy, typ))
 
+
+def inferType(typ: TwTy) -> CodeGen[CTy]:
+    return typ.match(
+        int=lambda: returnCodeGen(CTy.INT()),
+        bool=lambda: returnCodeGen(CTy.BOOLEAN()),
+        string=lambda: returnCodeGen(CTy.STRING()),
+        float=lambda: returnCodeGen(CTy.DOUBLE()),
+        unit=lambda: returnCodeGen(CTy.VOID()),
+        # FIXME: length?
+        list=lambda a: returnCodeGen(CTy.ARRAY(inferType(a))),
+        # FIXME: c dict equivalent?
+        # dict
+        function=lambda : failCodeGen('function not first class in C'),
+        var=lambda a: failCodeGen('cant infer a Twin var type to C'),
+        record=lambda a: returnCodeGen(CTy.STRUCT(a))
+    )
+
+def inferTypes(typs: Dict[str, TwTy]) -> CodeGen[Dict[str, CTy]]:
+    #TODO: proper do it for dict
+    return reduce(lambda x, y: monad(inferType(x), lambda a: y+[a]), typs, returnExcept([]))
 
 # command based codegen
 def inferCommnad():

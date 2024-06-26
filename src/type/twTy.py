@@ -2,7 +2,21 @@ from typing import Any, List, Dict, Tuple
 from decimal import Decimal
 from adt.decorator import adt
 from adt.case import Case
-from src.type.twTy import TwTy
+
+@adt
+class TwTy:
+    INT                 :   Case
+    BOOL                :   Case
+    STRING              :   Case
+    FLOAT               :   Case
+
+    UNIT                :   Case
+    LIST                :   Case['TwTy']
+    DICT                :   Case[str, 'TwTy']
+    RECORD              :   Case[List[Tuple[str, 'TwTy']]]
+
+    FUNCTION            :   Case[List['TwTy'], 'TwTy']
+    VAR                 :   Case[str]
 
 @adt
 class TwTm:
@@ -14,8 +28,8 @@ class TwTm:
 
     UNDEFINED           :   Case
     UNIT                :   Case
-    LISTTYPE            :   Case[List['TwTm']]
-    DICTTYPE            :   Case[Dict[str, 'TwTm']]
+    LIST                :   Case[List['TwTm']]
+    DICT                :   Case[Dict[str, 'TwTm']]
 
     FUNCTION            :   Case[List[Tuple[str, TwTy]], 'TwTm', TwTy]
     INTRO               :   Case[str, 'TwTm', TwTy]
