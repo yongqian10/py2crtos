@@ -216,6 +216,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
             #opt=lambda a:
         )
 
+    # function declation
     def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
         # skip for now no subtype supported
         #def _inferSubType(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
@@ -238,6 +239,19 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
     def _introPlace(var: str, closure: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
         return monad(addTmVarBind(var, typ, closure), lambda ast:
                      monad(inferType(typ), lambda ctyp: returnCodeGen(([CTm.BLOCK([CTm.VARINTRODUCTION(var, ctyp), ast[0]])], typ))))
+
+    # function call with args as closure
+    def _appPlace(funcVar: TwTm, args: List[TwTm]):
+        def _place(funcName: str, funcType: TwTy, args: List[CTm]):
+            return funcType.match(
+                function=lambda argstyp, retyp: returnCodeGen(([CTm.APP(CTm.VAR(funcName), args)], retyp)),
+                # TODO complete rest of the matches
+            )
+
+        return monad(infer(funcVar, Placement.NIL()),lambda a: # varast, retyp, funcvar
+                     monad(reduce(lambda x,y: monad(infer(x, Placement.NIL()), lambda z: returnCodeGen(y+z[0])), args, returnCodeGen([])), lambda cargs: # argsast, argstyp, argsvar
+                           monad(_place(a[0], a[1], cargs), lambda b:
+                                 returnCodeGen((a[0] + cargs + b[0], b[1])))))
 
     return tm.match(
         int=lambda a: _intLiteralPlace(a),

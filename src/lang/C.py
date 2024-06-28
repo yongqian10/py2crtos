@@ -131,7 +131,7 @@ class CTm:
     ARRAYINDEXER:            Case['CTm']                     # C only support single indexing
     VAR:                     Case[str]
 
-    VARINTRODUCTION:          Case[str, 'CTy', 'Ctm']
+    VARINTRODUCTION:          Case[str, 'CTy', 'CTm']
     VARCOPYASSIGNMENT:      Case['CTm', 'CTm']
     VARREFASSIGNMENT:       Case['CTm', 'CTm']
 
@@ -149,8 +149,7 @@ class CTm:
     BREAK:                   Case[str]
     CONTINUE:                Case[str]
 
-
     # -----------------------------------------------------------------------------
-    # main
+    # function call
     #CTmTemplate:                Case[str]
-    APP:                     Case['CTm', List['CTm']]        # return, list of args
+    APP:                     Case['CTm', List['CTm']]        # body, list of args
