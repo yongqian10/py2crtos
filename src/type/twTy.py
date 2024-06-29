@@ -6,9 +6,9 @@ from adt.case import Case
 @adt
 class TwTy:
     INT                 :   Case
-    BOOL                :   Case
+    BOOLEAN             :   Case
     STRING              :   Case
-    FLOAT               :   Case
+    DOUBLE               :   Case
 
     UNIT                :   Case
     LIST                :   Case['TwTy']

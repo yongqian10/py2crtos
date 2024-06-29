@@ -8,6 +8,7 @@ from src.typeClass.monad import monad, _return
 from src.typeClass.monoid import mappend
 from src.monad._except import Except, returnExcept, runExcept, throwE
 from src.monad.either import Either, returnEither
+from src.monad.maybe import Maybe
 from src.type.twTy import TwTm, TwTy, TwCommonCommand, TwTaskCommand
 from src.lang.C import CTm, CTy
 
@@ -57,11 +58,11 @@ def failCodeGen(errormsg: str) -> CodeGen:
 def runCodeGen(f: CodeGen, r, s) -> Except:
     return f.match(codegen=lambda a : a(r, s))
 
-def runCodeGen2(tm: TwTm) -> Either[str, C]:
+def runCodeGen2(tm: TwTm) -> Either[str, CTm]:
     def _runCodeGen(f: CodeGen, r, s) -> Except:
         return f.match(codegen=lambda a : a(r, s))
 
-    return monad(runExcept(_runCodeGen(infer(tm), Ctx(tmBindEnv={}), 0)), lambda t:
+    return monad(runExcept(_runCodeGen(infer(tm, Placement.NIL()), Ctx(tmBindEnv={}), 0)), lambda t:
                  returnEither(CTm.FUNCTION('main', [], CTm.BLOCK(t[0]+[CTm.RETURN(CTm.VAR(t[1]))]))))
 
 ###################################################################
@@ -151,46 +152,45 @@ def addTmVarBinds(namedict: Dict[str, TwTy], codegen: CodeGen):
     return local(lambda ctx: ctx._replace(tmBindEnv={**ctx.tmBindEnv, **namedict}), codegen=codegen)
 
 # general codegen
-def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
-
-    def _intLiteralPlace(_int) -> CodeGen[Tuple(AST, TwTy)]:
+def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]: # return associated var name if present
+    def _intLiteralPlace(_int) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         # NOTE: intro goes to TmFix
         # TODO: enable char&short support
         return placement.match(
-            nil=lambda : returnCodeGen(([CTm.INT(_int)], TwTy.INT())),
+            nil=lambda : returnCodeGen(([CTm.INT(_int)], TwTy.INT(), Maybe.NOTHING())),
             #intro=lambda a: returnCodeGen([_intro(a)]),
             var=lambda a, mode: mode.match(
-                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT())),
-                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT())))
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT(), Maybe.JUST(a))),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.INT(_int))], TwTy.INT(), Maybe.JUST(a))))
             #opt=lambda a:
         )
 
-    def _stringLiteralPlace(_str) -> CodeGen[Tuple(AST, TwTy)]:
+    def _stringLiteralPlace(_str) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         return placement.match(
-            nil=lambda : returnCodeGen(([CTm.STRING(_str)], TwTy.STRING())),
+            nil=lambda : returnCodeGen(([CTm.STRING(_str)], TwTy.STRING(), Maybe.NOTHING())),
             var=lambda a, mode: mode.match(
-                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING())),
-                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING())))
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING(), Maybe.JUST(a))),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.STRING(_str))], TwTy.STRING(), Maybe.JUST(a))))
         )
 
-    def _doubleLiteralPlace(_fp) -> CodeGen[Tuple(AST, TwTy)]:
+    def _doubleLiteralPlace(_fp) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         # TODO: support more length option, float & long double
         return placement.match(
-            nil=lambda : returnCodeGen(([CTm.DOUBLE(_fp)], TwTy.DOUBLE())),
+            nil=lambda : returnCodeGen(([CTm.DOUBLE(_fp)], TwTy.DOUBLE(), Maybe.NOTHING())),
             var=lambda a, mode: mode.match(
-                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.DOUBLE(_fp))], TwTy.DOUBLE())),
-                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.DOUBLE(_fp))], TwTy.DOUBLE())))
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.DOUBLE(_fp))], TwTy.DOUBLE(), Maybe.JUST(a))),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.DOUBLE(_fp))], TwTy.DOUBLE(), Maybe.JUST(a))))
         )
 
-    def _boolLiteralPlace(_bool) -> CodeGen[Tuple(AST, TwTy)]:
+    def _boolLiteralPlace(_bool) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         return placement.match(
-            nil=lambda : returnCodeGen(([CTm.BOOLEAN(_bool)], TwTy.BOOLEAN())),
+            nil=lambda : returnCodeGen(([CTm.BOOLEAN(_bool)], TwTy.BOOLEAN(), Maybe.NOTHING())),
             var=lambda a, mode: mode.match(
-                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.BOOLEAN(_bool))], TwTy.BOOLEAN())),
-                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.BOOLEAN(_bool))], TwTy.BOOLEAN())))
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.BOOLEAN(_bool))], TwTy.BOOLEAN(), Maybe.JUST(a))),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.BOOLEAN(_bool))], TwTy.BOOLEAN(), Maybe.JUST(a))))
         )
 
-    def _arrayLiteralPlace(_list: List[TwTm]) -> CodeGen[Tuple(AST, TwTy)]:
+    def _arrayLiteralPlace(_list: List[TwTm]) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         # TODO provide option to enable dynamic allocation
         def _traverse():
             return reduce(lambda a, acc: monad(acc, lambda b:
@@ -199,25 +199,25 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
 
         return monad(_traverse(), lambda ctmlist: placement.match(
             # FIXME how about no assigment for nil, just pass down literal
-            nil=lambda : returnCodeGen(([CTm.ARRAY(ctmlist[0])], TwTy.ARRAY(ctmlist[1]))),#returnCodeGen([_intro(b, ctmlist)])),
+            nil=lambda : returnCodeGen(([CTm.ARRAY(ctmlist[0])], TwTy.LIST(ctmlist[1]), Maybe.NOTHING())),
             var=lambda a, mode: mode.match(
-                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.ARRAY(ctmlist[0]))], TwTy.ARRAY(ctmlist[1]))),
-                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.ARRAY(ctmlist[0]))], TwTy.ARRAY(ctmlist[1]))))
+                copy=lambda: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(a), CTm.ARRAY(ctmlist[0]))], TwTy.LIST(ctmlist[1]), Maybe.JUST(a))),
+                ref=lambda: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(a), CTm.ARRAY(ctmlist[0]))], TwTy.LIST(ctmlist[1]), Maybe.JUST(a))))
             #intro=lambda a: returnCodeGen([_intro(a, ctmlist)]),
             #opt=lambda a:
         ))
 
-    def _varPlace(_var) -> CodeGen[Tuple(AST, TwTy)]:
+    def _varPlace(_var) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         return placement.match(
-            nil=lambda : monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VAR(_var)], typ))),
+            nil=lambda : monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VAR(_var)], typ, Maybe.NOTHING()))),
             var=lambda a, mode: mode.match(
-                copy=lambda: monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(_var), a)], typ))),
-                ref=lambda: monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(_var), a)], typ))))
+                copy=lambda: monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VARCOPYASSIGNMENT(CTm.VAR(_var), a)], typ, Maybe.JUST(a)))),
+                ref=lambda: monad(lookupTmVarBind(_var), lambda typ: returnCodeGen(([CTm.VARREFASSIGNMENT(CTm.VAR(_var), a)], typ, Maybe.JUST(a)))))
             #opt=lambda a:
         )
 
     # function declation
-    def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
+    def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         # skip for now no subtype supported
         #def _inferSubType(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
         #    pass
@@ -225,7 +225,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
         def _inferFunc():
             return monad(addTmVarBinds(args, infer(block, Placement.NIL())), lambda ast:
                          # NOTE: C func not necessary has return
-                         monad(inferTypes(args), lambda ctyps: returnCodeGen(([CTm.FUNCTION(name, ctyps, CTm.BLOCK([ast[0]]))], ret))))
+                         monad(inferTypes(args), lambda ctyps: returnCodeGen(([CTm.FUNCTION(name, ctyps, CTm.BLOCK([ast[0]]))], ret, Maybe.NOTHING()))))
 
         return placement.match(
             nil=lambda : _inferFunc(),
@@ -236,22 +236,25 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy)]:
         )
 
     # intro var with closure
-    def _introPlace(var: str, closure: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy)]:
+    def _introPlace(var: str, closure: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         return monad(addTmVarBind(var, typ, closure), lambda ast:
-                     monad(inferType(typ), lambda ctyp: returnCodeGen(([CTm.BLOCK([CTm.VARINTRODUCTION(var, ctyp), ast[0]])], typ))))
+                     monad(inferType(typ), lambda ctyp: returnCodeGen(([CTm.BLOCK([CTm.VARINTRODUCTION(var, ctyp), ast[0]])], typ, Maybe.JUST(var)))))
 
     # function call with args as closure
-    def _appPlace(funcVar: TwTm, args: List[TwTm]):
-        def _place(funcName: str, funcType: TwTy, args: List[CTm]):
-            return funcType.match(
-                function=lambda argstyp, retyp: returnCodeGen(([CTm.APP(CTm.VAR(funcName), args)], retyp)),
-                # TODO complete rest of the matches
-            )
+    # TODO: should we check args type match?
+    def _appPlace(funcVar: TwTm, args: List[TwTm]) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
+        def _place(funcName: Maybe[str], funcType: TwTy, args: List[CTm]):
+            return funcName.match(
+                just=lambda funcname: funcType.match(
+                    function=lambda argstyp, retyp: returnCodeGen(([CTm.APP(CTm.VAR(funcname), args)], retyp)),
+                    # TODO complete rest of the matches
+                ),
+                nothing=lambda : failCodeGen('function has no name'))
 
         return monad(infer(funcVar, Placement.NIL()),lambda a: # varast, retyp, funcvar
                      monad(reduce(lambda x,y: monad(infer(x, Placement.NIL()), lambda z: returnCodeGen(y+z[0])), args, returnCodeGen([])), lambda cargs: # argsast, argstyp, argsvar
-                           monad(_place(a[0], a[1], cargs), lambda b:
-                                 returnCodeGen((a[0] + cargs + b[0], b[1])))))
+                           monad(_place(a[2], a[1], cargs), lambda b:
+                                 returnCodeGen((a[0] + cargs + b[0], b[1], Maybe.NOTHING())))))
 
     return tm.match(
         int=lambda a: _intLiteralPlace(a),
