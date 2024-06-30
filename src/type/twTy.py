@@ -30,6 +30,7 @@ class TwTm:
     UNIT                :   Case
     LIST                :   Case[List['TwTm']]
     DICT                :   Case[Dict[str, 'TwTm']]
+    RECORD              :   Case[List[Tuple[str, 'TwTm']]] # no typ param list, generic not supported
 
     FUNCTION            :   Case[List[Tuple[str, TwTy]], 'TwTm', TwTy]
     INTRO               :   Case[str, 'TwTm', TwTy]

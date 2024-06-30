@@ -217,7 +217,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy, Maybe[str]
         )
 
     # function declation
-    def _funcPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
+    def _introFuncPlace(name: str, args: Dict[str, TwTy], block: TwTm, ret: TwTy) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         # skip for now no subtype supported
         #def _inferSubType(blocktm: TwTm, rety: TwTy, placement: Placement) -> CodeGen[A]:
         #    pass
@@ -236,7 +236,7 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy, Maybe[str]
         )
 
     # intro var with closure
-    def _introPlace(var: str, closure: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
+    def _introVarPlace(var: str, closure: TwTm, typ: TwTy) -> CodeGen[Tuple(AST, TwTy, Maybe[str])]:
         return monad(addTmVarBind(var, typ, closure), lambda ast:
                      monad(inferType(typ), lambda ctyp: returnCodeGen(([CTm.BLOCK([CTm.VARINTRODUCTION(var, ctyp), ast[0]])], typ, Maybe.JUST(var)))))
 
@@ -256,15 +256,24 @@ def infer(tm: TwTm, placement: Placement) -> CodeGen[Tuple(AST, TwTy, Maybe[str]
                            monad(_place(a[2], a[1], cargs), lambda b:
                                  returnCodeGen((a[0] + cargs + b[0], b[1], Maybe.NOTHING())))))
 
+    def _introStructPlace(structName: str, field: List):
+        pass
+
+    def _structPlace(structName: str, field: List):
+        pass
+
+    def _structFieldPlace(structName: str, fieldName: str):
+        pass
+
     return tm.match(
         int=lambda a: _intLiteralPlace(a),
         string=lambda a: _stringLiteralPlace(a),
         double=lambda a: _doubleLiteralPlace(a),
         bool=lambda a: _boolLiteralPlace(a),
         list=lambda t, a: _arrayLiteralPlace(a),
-        function=lambda name, args, bdy, retyp: _funcPlace(name, args, bdy, retyp),
+        function=lambda name, args, bdy, retyp: _introFuncPlace(name, args, bdy, retyp),
         #var=lambda name, args, bdy, retyp: _funcPlace(name, args, bdy, retyp),
-        intro=lambda name, bdy, typ: _introPlace(name, bdy, typ))
+        intro=lambda name, bdy, typ: _introVarPlace(name, bdy, typ))
 
 
 def inferType(typ: TwTy) -> CodeGen[CTy]:
